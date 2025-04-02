@@ -1,110 +1,127 @@
 import { useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
-import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient"; // Supabase bağlantısı
 
 function Form() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
-    address: ""
+    category: "",
+    address: "",
+    website: "",
   });
-
+  const [step, setStep] = useState(1); // Form adımlarını takip etmek için bir state
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
+  const [success, setSuccess] = useState("");
 
-  const router = useRouter();
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+  const handleChange = (e: any) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
-
-    // Veri doğrulama
-    if (!formData.name || !formData.email || !formData.phone) {
-      setError("Lütfen tüm alanları doldurun.");
-      return;
-    }
-
-    // Formu Supabase'a gönderme
-    const { data, error } = await supabase
-      .from("isletmeler")
-      .insert([{
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address,
-      }]);
-
-    if (error) {
-      setError("Bir hata oluştu, lütfen tekrar deneyin.");
-    } else {
-      setSuccess(true);
-      // Başarıyla eklendikten sonra yönlendirme yapalım
-      setTimeout(() => {
-        router.push("/success"); // "success" sayfasına yönlendirme
-      }, 2000); // 2 saniye sonra yönlendirme yapılacak
+    try {
+      // İşletme verisini Supabase'e kaydediyoruz
+      const { data, error } = await supabase.from("isletmeler").insert([formData]);
+      if (error) throw error;
+      setSuccess("İşletme başarıyla kaydedildi!");
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        category: "",
+        address: "",
+        website: "",
+      });
+    } catch (error: any) {
+      setError(error.message || "Bir hata oluştu.");
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-3xl font-semibold text-center mb-6">İşletme Bilgilerinizi Girin</h2>
-      
-      {error && <div className="bg-red-100 text-red-600 p-3 rounded-md mb-4">{error}</div>}
-      {success && <div className="bg-green-100 text-green-600 p-3 rounded-md mb-4">İşletme başarıyla eklendi!</div>}
+    <div className="container mx-auto p-8">
+      <h1 className="text-3xl font-bold mb-6">İşletme Ekle</h1>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && <div className="bg-red-100 text-red-700 p-2 rounded">{error}</div>}
+        {success && <div className="bg-green-100 text-green-700 p-2 rounded">{success}</div>}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <input 
-          type="text" 
-          name="name" 
-          placeholder="İşletme Adı" 
-          value={formData.name} 
-          onChange={handleChange} 
-          required 
-          className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-        />
-        
-        <input 
-          type="email" 
-          name="email" 
-          placeholder="E-posta" 
-          value={formData.email} 
-          onChange={handleChange} 
-          required 
-          className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-        />
-        
-        <input 
-          type="text" 
-          name="phone" 
-          placeholder="Telefon" 
-          value={formData.phone} 
-          onChange={handleChange} 
-          required 
-          className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-        />
-        
-        <input 
-          type="text" 
-          name="address" 
-          placeholder="Adres (isteğe bağlı)" 
-          value={formData.address} 
-          onChange={handleChange} 
-          className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-        />
-        
-        <button 
-          type="submit" 
-          className="w-full bg-blue-500 text-white py-3 rounded-md hover:bg-blue-600 transition-colors"
-        >
-          Gönder
-        </button>
+        {/* Adım 1 */}
+        {step === 1 && (
+          <div>
+            <input
+              type="text"
+              name="name"
+              placeholder="İşletme Adı"
+              value={formData.name}
+              onChange={handleChange}
+              className="w-full p-2 border border-gray-300 rounded mb-4"
+              required
+            />
+            <input
+              type="email"
+              name="email"
+              placeholder="E-posta"
+              value={formData.email}
+              onChange={handleChange}
+              className="w-full p-2 border border-gray-300 rounded mb-4"
+              required
+            />
+            <button type="button" onClick={() => setStep(2)} className="btn-primary">
+              Sonraki Adım
+            </button>
+          </div>
+        )}
+
+        {/* Adım 2 */}
+        {step === 2 && (
+          <div>
+            <input
+              type="tel"
+              name="phone"
+              placeholder="Telefon"
+              value={formData.phone}
+              onChange={handleChange}
+              className="w-full p-2 border border-gray-300 rounded mb-4"
+              required
+            />
+            <input
+              type="text"
+              name="category"
+              placeholder="Kategori"
+              value={formData.category}
+              onChange={handleChange}
+              className="w-full p-2 border border-gray-300 rounded mb-4"
+            />
+            <button type="button" onClick={() => setStep(3)} className="btn-primary">
+              Sonraki Adım
+            </button>
+          </div>
+        )}
+
+        {/* Adım 3 */}
+        {step === 3 && (
+          <div>
+            <input
+              type="text"
+              name="address"
+              placeholder="Adres"
+              value={formData.address}
+              onChange={handleChange}
+              className="w-full p-2 border border-gray-300 rounded mb-4"
+            />
+            <input
+              type="url"
+              name="website"
+              placeholder="Web Sitesi"
+              value={formData.website}
+              onChange={handleChange}
+              className="w-full p-2 border border-gray-300 rounded mb-4"
+            />
+            <button type="submit" className="btn-primary">
+              Kaydet
+            </button>
+          </div>
+        )}
       </form>
     </div>
   );
