@@ -1,125 +1,113 @@
 import { useState } from "react";
-import { supabase } from "../lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
+import { useRouter } from "next/navigation";
 
-// basit slugify fonksiyonu
-function slugify(text: string) {
-  return text
-    .toLowerCase()
-    .replace(/ç/g, "c")
-    .replace(/ğ/g, "g")
-    .replace(/ı/g, "i")
-    .replace(/ö/g, "o")
-    .replace(/ş/g, "s")
-    .replace(/ü/g, "u")
-    .replace(/[^\w\s-]/g, "")
-    .trim()
-    .replace(/\s+/g, "-");
-}
-
-export default function IsletmeEkle() {
+function Form() {
   const [formData, setFormData] = useState({
     name: "",
-    description: "",
-    keywords: "",
-    category: "",
     email: "",
     phone: "",
-    website: "",
-    mapsUrl: ""
+    address: ""
   });
 
+  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [error, setError] = useState(false);
 
-  const handleChange = (e: any) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const router = useRouter();
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
   };
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const slug = slugify(formData.name); // ✅ otomatik slug üretimi
+    // Veri doğrulama
+    if (!formData.name || !formData.email || !formData.phone) {
+      setError("Lütfen tüm alanları doldurun.");
+      return;
+    }
 
-    const { data, error } = await supabase.from("isletmeler").insert([
-      { ...formData, slug }
-    ]);
+    // Formu Supabase'a gönderme
+    const { data, error } = await supabase
+      .from("isletmeler")
+      .insert([{
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+      }]);
 
     if (error) {
-      setError(true);
+      setError("Bir hata oluştu, lütfen tekrar deneyin.");
     } else {
       setSuccess(true);
-      setFormData({
-        name: "",
-        description: "",
-        keywords: "",
-        category: "",
-        email: "",
-        phone: "",
-        website: "",
-        mapsUrl: ""
-      });
+      // Başarıyla eklendikten sonra yönlendirme yapalım
+      setTimeout(() => {
+        router.push("/success"); // "success" sayfasına yönlendirme
+      }, 2000); // 2 saniye sonra yönlendirme yapılacak
     }
   };
 
   return (
-    <div style={{ maxWidth: 600, margin: "auto", padding: 20 }}>
-      <h2>İşletme Ekle</h2>
-      {success && <p style={{ color: "green" }}>✅ Başarıyla eklendi</p>}
-      {error && <p style={{ color: "red" }}>❌ Bir hata oluştu. Lütfen tekrar deneyin.</p>}
-      <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12 }}>
-        <input
-          name="name"
-          placeholder="İşletme Adı"
-          value={formData.name}
-          onChange={handleChange}
-          required
+    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md">
+      <h2 className="text-3xl font-semibold text-center mb-6">İşletme Bilgilerinizi Girin</h2>
+      
+      {error && <div className="bg-red-100 text-red-600 p-3 rounded-md mb-4">{error}</div>}
+      {success && <div className="bg-green-100 text-green-600 p-3 rounded-md mb-4">İşletme başarıyla eklendi!</div>}
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <input 
+          type="text" 
+          name="name" 
+          placeholder="İşletme Adı" 
+          value={formData.name} 
+          onChange={handleChange} 
+          required 
+          className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
         />
-        <textarea
-          name="description"
-          placeholder="Açıklama"
-          value={formData.description}
-          onChange={handleChange}
-          required
+        
+        <input 
+          type="email" 
+          name="email" 
+          placeholder="E-posta" 
+          value={formData.email} 
+          onChange={handleChange} 
+          required 
+          className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
         />
-        <input
-          name="keywords"
-          placeholder="Anahtar Kelimeler"
-          value={formData.keywords}
-          onChange={handleChange}
+        
+        <input 
+          type="text" 
+          name="phone" 
+          placeholder="Telefon" 
+          value={formData.phone} 
+          onChange={handleChange} 
+          required 
+          className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
         />
-        <input
-          name="category"
-          placeholder="Kategori"
-          value={formData.category}
-          onChange={handleChange}
+        
+        <input 
+          type="text" 
+          name="address" 
+          placeholder="Adres (isteğe bağlı)" 
+          value={formData.address} 
+          onChange={handleChange} 
+          className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
         />
-        <input
-          name="email"
-          placeholder="E-posta"
-          type="email"
-          value={formData.email}
-          onChange={handleChange}
-        />
-        <input
-          name="phone"
-          placeholder="Telefon"
-          value={formData.phone}
-          onChange={handleChange}
-        />
-        <input
-          name="website"
-          placeholder="Web Sitesi"
-          value={formData.website}
-          onChange={handleChange}
-        />
-        <input
-          name="mapsUrl"
-          placeholder="Google Maps URL"
-          value={formData.mapsUrl}
-          onChange={handleChange}
-        />
-        <button type="submit">Kaydet</button>
+        
+        <button 
+          type="submit" 
+          className="w-full bg-blue-500 text-white py-3 rounded-md hover:bg-blue-600 transition-colors"
+        >
+          Gönder
+        </button>
       </form>
     </div>
   );
 }
+
+export default Form;
