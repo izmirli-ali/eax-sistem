@@ -1,10 +1,7 @@
-'use client';
-
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "../lib/supabaseClient";
+import { supabase } from "../lib/supabaseClient"; // Supabase client'ı import ediyoruz
 
-// ✅ Türkçe uyumlu slugify fonksiyonu
+// Slugify Fonksiyonu: Türkçe karakterleri İngilizce karakterlere dönüştürür
 function slugify(text: string) {
   return text
     .toLowerCase()
@@ -31,36 +28,31 @@ export default function IsletmeEkle() {
     mapsUrl: ""
   });
 
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState("");
-  const router = useRouter();
+  const [success, setSuccess] = useState(false); // Başarı durumunu tutacak state
 
+  // Form verisini işleme fonksiyonu
   const handleChange = (e: any) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // Form gönderme işlemi
   const handleSubmit = async (e: any) => {
-    e.preventDefault();
-    setError("");
-    const slug = slugify(formData.name);
+    e.preventDefault(); // Sayfa yenilemesini engeller
 
+    const slug = slugify(formData.name); // Slug üretimi
+
+    // Supabase'a veri ekleme işlemi
     const { error } = await supabase.from("isletmeler").insert([
-      { ...formData, slug }
+      { ...formData, slug } // formData'ya slug ekliyoruz
     ]);
 
-    if (!error) {
-      setSuccess(true);
-      router.push(`/i/${slug}`);
-    } else {
-      setError("İşletme eklenirken bir hata oluştu.");
-    }
+    if (!error) setSuccess(true); // Başarıyla eklenirse, success state'ini true yapar
   };
 
   return (
     <div style={{ maxWidth: 600, margin: "auto", padding: 20 }}>
       <h2>İşletme Ekle</h2>
       {success && <p style={{ color: "green" }}>✅ Başarıyla eklendi</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
       <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12 }}>
         <input name="name" placeholder="İşletme Adı" onChange={handleChange} required />
         <textarea name="description" placeholder="Açıklama" onChange={handleChange} required />
