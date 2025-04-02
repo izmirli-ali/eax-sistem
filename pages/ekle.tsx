@@ -1,7 +1,9 @@
-import { useState } from "react";
-import { supabase } from "../lib/supabaseClient"; // Supabase client'ı import ediyoruz
+// components/IsletmeEkle.tsx
 
-// Slugify Fonksiyonu: Türkçe karakterleri İngilizce karakterlere dönüştürür
+import { useState } from "react";
+import { supabase } from "../lib/supabaseClient";
+
+// basit slugify fonksiyonu
 function slugify(text: string) {
   return text
     .toLowerCase()
@@ -28,25 +30,22 @@ export default function IsletmeEkle() {
     mapsUrl: ""
   });
 
-  const [success, setSuccess] = useState(false); // Başarı durumunu tutacak state
+  const [success, setSuccess] = useState(false);
 
-  // Form verisini işleme fonksiyonu
   const handleChange = (e: any) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Form gönderme işlemi
   const handleSubmit = async (e: any) => {
-    e.preventDefault(); // Sayfa yenilemesini engeller
+    e.preventDefault();
 
-    const slug = slugify(formData.name); // Slug üretimi
+    const slug = slugify(formData.name); // ✅ otomatik slug üretimi
 
-    // Supabase'a veri ekleme işlemi
     const { error } = await supabase.from("isletmeler").insert([
-      { ...formData, slug } // formData'ya slug ekliyoruz
+      { ...formData, slug }
     ]);
 
-    if (!error) setSuccess(true); // Başarıyla eklenirse, success state'ini true yapar
+    if (!error) setSuccess(true);
   };
 
   return (
