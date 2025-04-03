@@ -1,28 +1,25 @@
-import { supabase } from "@/lib/supabaseClient";
+import { useEffect, useState } from "react"
+import { supabase } from "../lib/supabaseClient"
 
-export async function getServerSideProps() {
-  const { data, error } = await supabase
-    .from("istatistikler")
-    .select("aktif_isletme_sayisi")
-    .eq("id", 1);
+export default function Dashboard() {
+  const [count, setCount] = useState<number | null>(null)
 
-  if (error) {
-    console.error("Veri çekilemedi:", error.message);
-    return { props: { aktif_isletme_sayisi: 0 } };
-  }
+  useEffect(() => {
+    const fetchCount = async () => {
+      const { count, error } = await supabase
+        .from("isletmeler")
+        .select("*", { count: "exact", head: true })
 
-  return {
-    props: {
-      aktif_isletme_sayisi: data[0]?.aktif_isletme_sayisi || 0,
-    },
-  };
-}
+      if (!error) setCount(count)
+    }
 
-export default function Dashboard({ aktif_isletme_sayisi }) {
+    fetchCount()
+  }, [])
+
   return (
-    <div>
-      <h1>Dashboard</h1>
-      <p>Aktif İşletmeler: {aktif_isletme_sayisi}</p>
+    <div style={{ padding: "40px", fontSize: "18px" }}>
+      <h1>📊 Dashboard</h1>
+      <p>Toplam kayıtlı işletme sayısı: <strong>{count ?? "Yükleniyor..."}</strong></p>
     </div>
-  );
+  )
 }
