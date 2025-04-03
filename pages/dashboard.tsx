@@ -1,89 +1,71 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
-
-interface Business {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  created_at: string;
-}
+import { Activity, CreditCard, DollarSign, Users } from "lucide-react";
 
 export default function Dashboard() {
-  const [businesses, setBusinesses] = useState<Business[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [todayCount, setTodayCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
+  const [todayCount, setTodayCount] = useState<number | null>(null);
 
   useEffect(() => {
-    const fetchBusinesses = async () => {
-      const { data, error } = await supabase
+    const fetchCounts = async () => {
+      const { count: total, error: totalError } = await supabase
         .from("isletmeler")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .select("*", { count: "exact", head: true });
 
-      if (!error && data) {
-        setBusinesses(data);
-        setTotalCount(data.length);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-        const today = new Date().toISOString().split("T")[0];
-        const todays = data.filter(b => b.created_at.startsWith(today));
-        setTodayCount(todays.length);
-      }
+      const { count: todayTotal, error: todayError } = await supabase
+        .from("isletmeler")
+        .select("*", { count: "exact", head: true })
+        .gte("created_at", today.toISOString());
 
-      setLoading(false);
+      if (!totalError) setTotalCount(total);
+      if (!todayError) setTodayCount(todayTotal);
     };
 
-    fetchBusinesses();
+    fetchCounts();
   }, []);
 
   return (
-    <div className="p-8 space-y-6">
-      <h1 className="text-2xl font-bold">📊 Dashboard</h1>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-blue-50 border border-blue-200 p-6 rounded shadow">
-          <h2 className="text-lg font-medium text-blue-800">Toplam İşletme</h2>
-          <p className="text-3xl font-bold text-blue-900">{totalCount}</p>
+    <div className="space-y-6 p-6">
+      <h1 className="text-2xl font-bold">Dashboard</h1>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="border p-4 rounded-lg bg-white shadow">
+          <div className="flex justify-between items-center">
+            <p className="text-sm text-muted-foreground">Toplam İşletme</p>
+            <DollarSign className="w-5 h-5 text-muted-foreground" />
+          </div>
+          <p className="text-2xl font-bold mt-2">{totalCount ?? "..."}</p>
+          <p className="text-xs text-muted-foreground">Hepsi bugüne kadar</p>
         </div>
-        <div className="bg-green-50 border border-green-200 p-6 rounded shadow">
-          <h2 className="text-lg font-medium text-green-800">Bugün Eklenen</h2>
-          <p className="text-3xl font-bold text-green-900">{todayCount}</p>
-        </div>
-      </div>
 
-      <div>
-        <h2 className="text-xl font-semibold mt-6 mb-4">📋 Kayıtlı İşletmeler</h2>
-        {loading ? (
-          <p>Yükleniyor...</p>
-        ) : businesses.length === 0 ? (
-          <p>Henüz işletme kaydı yok.</p>
-        ) : (
-          <table className="min-w-full bg-white border border-gray-200 rounded shadow">
-            <thead>
-              <tr className="bg-gray-100 text-left text-sm">
-                <th className="px-4 py-2">#</th>
-                <th className="px-4 py-2">İsim</th>
-                <th className="px-4 py-2">Email</th>
-                <th className="px-4 py-2">Telefon</th>
-                <th className="px-4 py-2">Tarih</th>
-              </tr>
-            </thead>
-            <tbody>
-              {businesses.map((b, i) => (
-                <tr key={b.id} className="border-t hover:bg-gray-50">
-                  <td className="px-4 py-2">{i + 1}</td>
-                  <td className="px-4 py-2 font-medium">{b.name}</td>
-                  <td className="px-4 py-2">{b.email}</td>
-                  <td className="px-4 py-2">{b.phone}</td>
-                  <td className="px-4 py-2 text-sm text-gray-500">
-                    {new Date(b.created_at).toLocaleDateString("tr-TR")}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <div className="border p-4 rounded-lg bg-white shadow">
+          <div className="flex justify-between items-center">
+            <p className="text-sm text-muted-foreground">Bugün Eklenen</p>
+            <Users className="w-5 h-5 text-muted-foreground" />
+          </div>
+          <p className="text-2xl font-bold mt-2">{todayCount ?? "..."}</p>
+          <p className="text-xs text-muted-foreground">Bugün oluşturulan kayıtlar</p>
+        </div>
+
+        <div className="border p-4 rounded-lg bg-white shadow">
+          <div className="flex justify-between items-center">
+            <p className="text-sm text-muted-foreground">Satışlar</p>
+            <CreditCard className="w-5 h-5 text-muted-foreground" />
+          </div>
+          <p className="text-2xl font-bold mt-2">+12,234</p>
+          <p className="text-xs text-muted-foreground">%19 geçen aydan</p>
+        </div>
+
+        <div className="border p-4 rounded-lg bg-white shadow">
+          <div className="flex justify-between items-center">
+            <p className="text-sm text-muted-foreground">Aktif Kullanıcılar</p>
+            <Activity className="w-5 h-5 text-muted-foreground" />
+          </div>
+          <p className="text-2xl font-bold mt-2">+573</p>
+          <p className="text-xs text-muted-foreground">%201 geçen aydan</p>
+        </div>
       </div>
     </div>
   );
