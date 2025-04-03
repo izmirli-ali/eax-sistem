@@ -1,54 +1,69 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 
+interface Business {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  created_at: string;
+}
+
 export default function Dashboard() {
-  const [totalBusinesses, setTotalBusinesses] = useState<number | null>(null);
-  const [todayBusinesses, setTodayBusinesses] = useState<number | null>(null);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchBusinessStats = async () => {
-      const { count: totalCount } = await supabase
+    const fetchBusinesses = async () => {
+      const { data, error } = await supabase
         .from("isletmeler")
-        .select("*", { count: "exact", head: true });
-      setTotalBusinesses(totalCount || 0);
+        .select("id, name, email, phone, created_at")
+        .order("created_at", { ascending: false });
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const isoToday = today.toISOString();
+      if (!error && data) {
+        setBusinesses(data);
+      }
 
-      const { count: todayCount } = await supabase
-        .from("isletmeler")
-        .select("*", {
-          count: "exact",
-          head: true,
-        })
-        .gte("created_at", isoToday);
-
-      setTodayBusinesses(todayCount || 0);
+      setLoading(false);
     };
 
-    fetchBusinessStats();
+    fetchBusinesses();
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <h1 className="text-2xl font-bold mb-6">📊 Dashboard</h1>
+    <div className="p-8">
+      <h1 className="text-2xl font-bold mb-4">📋 Kayıtlı İşletmeler</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-lg font-semibold text-gray-700">Toplam Kayıtlı İşletme</h2>
-          <p className="text-4xl mt-2 font-bold text-blue-600">
-            {totalBusinesses !== null ? totalBusinesses : "..."}
-          </p>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-lg font-semibold text-gray-700">Bugün Eklenen İşletme</h2>
-          <p className="text-4xl mt-2 font-bold text-green-600">
-            {todayBusinesses !== null ? todayBusinesses : "..."}
-          </p>
-        </div>
-      </div>
+      {loading ? (
+        <p>Yükleniyor...</p>
+      ) : businesses.length === 0 ? (
+        <p>Henüz işletme kaydı yok.</p>
+      ) : (
+        <table className="min-w-full bg-white border border-gray-200 rounded shadow">
+          <thead>
+            <tr className="bg-gray-100 text-left text-sm">
+              <th className="px-4 py-2">#</th>
+              <th className="px-4 py-2">İsim</th>
+              <th className="px-4 py-2">Email</th>
+              <th className="px-4 py-2">Telefon</th>
+              <th className="px-4 py-2">Tarih</th>
+            </tr>
+          </thead>
+          <tbody>
+            {businesses.map((b, i) => (
+              <tr key={b.id} className="border-t hover:bg-gray-50">
+                <td className="px-4 py-2">{i + 1}</td>
+                <td className="px-4 py-2 font-medium">{b.name}</td>
+                <td className="px-4 py-2">{b.email}</td>
+                <td className="px-4 py-2">{b.phone}</td>
+                <td className="px-4 py-2 text-sm text-gray-500">
+                  {new Date(b.created_at).toLocaleDateString("tr-TR")}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
