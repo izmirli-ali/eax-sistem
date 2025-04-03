@@ -1,56 +1,54 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 
-type Isletme = {
-  id: number;
-  name: string;
-  category: string;
-  created_at: string;
-};
-
 export default function Dashboard() {
-  const [isletmeler, setIsletmeler] = useState<Isletme[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [totalBusinesses, setTotalBusinesses] = useState<number | null>(null);
+  const [todayBusinesses, setTodayBusinesses] = useState<number | null>(null);
 
   useEffect(() => {
-    const fetchBusinesses = async () => {
-      const { data, error } = await supabase
+    const fetchBusinessStats = async () => {
+      const { count: totalCount } = await supabase
         .from("isletmeler")
-        .select("id, name, category, created_at")
-        .order("created_at", { ascending: false });
+        .select("*", { count: "exact", head: true });
+      setTotalBusinesses(totalCount || 0);
 
-      if (!error && data) {
-        setIsletmeler(data);
-      }
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const isoToday = today.toISOString();
 
-      setLoading(false);
+      const { count: todayCount } = await supabase
+        .from("isletmeler")
+        .select("*", {
+          count: "exact",
+          head: true,
+        })
+        .gte("created_at", isoToday);
+
+      setTodayBusinesses(todayCount || 0);
     };
 
-    fetchBusinesses();
+    fetchBusinessStats();
   }, []);
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-semibold mb-6">📋 Kayıtlı İşletmeler</h1>
+    <div className="min-h-screen bg-gray-100 p-6">
+      <h1 className="text-2xl font-bold mb-6">📊 Dashboard</h1>
 
-      {loading ? (
-        <p>Yükleniyor...</p>
-      ) : isletmeler.length === 0 ? (
-        <p>Henüz işletme kaydı yok.</p>
-      ) : (
-        <div className="space-y-4">
-          {isletmeler.map((isletme) => (
-            <div
-              key={isletme.id}
-              className="border rounded-md p-4 bg-white shadow-sm"
-            >
-              <h2 className="text-lg font-bold">{isletme.name}</h2>
-              <p className="text-sm text-gray-600">Kategori: {isletme.category || "Belirtilmemiş"}</p>
-              <p className="text-sm text-gray-500">Kayıt tarihi: {new Date(isletme.created_at).toLocaleString()}</p>
-            </div>
-          ))}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-lg font-semibold text-gray-700">Toplam Kayıtlı İşletme</h2>
+          <p className="text-4xl mt-2 font-bold text-blue-600">
+            {totalBusinesses !== null ? totalBusinesses : "..."}
+          </p>
         </div>
-      )}
+
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-lg font-semibold text-gray-700">Bugün Eklenen İşletme</h2>
+          <p className="text-4xl mt-2 font-bold text-green-600">
+            {todayBusinesses !== null ? todayBusinesses : "..."}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
