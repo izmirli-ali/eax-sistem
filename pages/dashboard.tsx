@@ -1,68 +1,56 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 
+type Isletme = {
+  id: number;
+  name: string;
+  category: string;
+  created_at: string;
+};
+
 export default function Dashboard() {
-  const [totalBusinesses, setTotalBusinesses] = useState<number | null>(null);
-  const [todayBusinesses, setTodayBusinesses] = useState<number | null>(null);
+  const [isletmeler, setIsletmeler] = useState<Isletme[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchCounts = async () => {
-      // Tüm kayıt sayısını al
-      const { count: totalCount, error: totalError } = await supabase
+    const fetchBusinesses = async () => {
+      const { data, error } = await supabase
         .from("isletmeler")
-        .select("*", { count: "exact", head: true });
+        .select("id, name, category, created_at")
+        .order("created_at", { ascending: false });
 
-      // Bugünün tarihi (örneğin: 2025-04-03)
-      const today = new Date().toISOString().split("T")[0];
-
-      // Bugün eklenenleri filtreleyerek al
-      const { count: todayCount, error: todayError } = await supabase
-        .from("isletmeler")
-        .select("*", {
-          count: "exact",
-          head: true,
-        })
-        .gte("created_at", `${today}T00:00:00`);
-
-      // State güncellemeleri
-      if (!totalError && totalCount !== null) {
-        setTotalBusinesses(totalCount);
+      if (!error && data) {
+        setIsletmeler(data);
       }
 
-      if (!todayError && todayCount !== null) {
-        setTodayBusinesses(todayCount);
-      }
+      setLoading(false);
     };
 
-    fetchCounts();
+    fetchBusinesses();
   }, []);
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h1>📊 Dashboard</h1>
+    <div className="p-6 max-w-3xl mx-auto">
+      <h1 className="text-2xl font-semibold mb-6">📋 Kayıtlı İşletmeler</h1>
 
-      <div
-        style={{
-          marginTop: "2rem",
-          padding: "2rem",
-          border: "1px solid #eee",
-          borderRadius: "10px",
-          maxWidth: "400px",
-          background: "#f9f9f9",
-        }}
-      >
-        <h2>Toplam Kayıtlı İşletme:</h2>
-        <p style={{ fontSize: "2rem", fontWeight: "bold" }}>
-          {totalBusinesses !== null ? totalBusinesses : "Yükleniyor..."}
-        </p>
-
-        <hr style={{ margin: "1rem 0" }} />
-
-        <h2>Bugün Eklenenler:</h2>
-        <p style={{ fontSize: "1.5rem", fontWeight: "bold" }}>
-          {todayBusinesses !== null ? todayBusinesses : "Yükleniyor..."}
-        </p>
-      </div>
+      {loading ? (
+        <p>Yükleniyor...</p>
+      ) : isletmeler.length === 0 ? (
+        <p>Henüz işletme kaydı yok.</p>
+      ) : (
+        <div className="space-y-4">
+          {isletmeler.map((isletme) => (
+            <div
+              key={isletme.id}
+              className="border rounded-md p-4 bg-white shadow-sm"
+            >
+              <h2 className="text-lg font-bold">{isletme.name}</h2>
+              <p className="text-sm text-gray-600">Kategori: {isletme.category || "Belirtilmemiş"}</p>
+              <p className="text-sm text-gray-500">Kayıt tarihi: {new Date(isletme.created_at).toLocaleString()}</p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
